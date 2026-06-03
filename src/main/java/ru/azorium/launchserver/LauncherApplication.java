@@ -3,8 +3,7 @@ package ru.azorium.launchserver;
 import com.google.gson.JsonObject;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import ru.azorium.launchserver.utils.FileUtils;
-import ru.azorium.launchserver.utils.JsonHelper;
+import ru.azorium.launchserver.utils.gson.JsonHelper;
 import ru.azorium.launchserver.utils.hash.Hashes;
 
 import java.io.IOException;
@@ -85,7 +84,7 @@ public class LauncherApplication {
 
     private static void setLauncherHashes() {
         try {
-            JsonObject launcherHashesObj = JsonHelper.getObjectFromURL(GlobalObjects.gson, Hashes.launcherHashesFilePath.toUri().toURL());
+            JsonObject launcherHashesObj = JsonHelper.getObjectFromPath(Hashes.launcherHashesFilePath);
 
             if (!launcherHashesObj.isEmpty()) {
                 launcherHashesObj.asMap().forEach((name, el) -> {

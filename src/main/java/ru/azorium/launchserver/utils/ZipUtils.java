@@ -32,20 +32,6 @@ public class ZipUtils {
         }
     }
 
-    private static void createAndWriteFile(ZipArchiveOutputStream zipOut, Path file, ZipArchiveEntry zipEntry) throws IOException {
-        zipOut.putArchiveEntry(zipEntry);
-
-        try (InputStream inputStream = Files.newInputStream(file)) {
-            byte[] buffer = new byte[1048576];
-            int length;
-            while ((length = inputStream.read(buffer)) > 0) {
-                zipOut.write(buffer, 0, length);
-            }
-        }
-
-        zipOut.closeArchiveEntry();
-    }
-
     public static void createZipFromFilesWithEnclosure(Path saveFolder, Path pathToReplace, String fileName, List<Path> files) {
         try (ZipArchiveOutputStream zipOut = new ZipArchiveOutputStream(new FileOutputStream(saveFolder.resolve(fileName).toFile()))) {
             zipOut.setLevel(5);
@@ -81,18 +67,7 @@ public class ZipUtils {
                                 }
 
                                 ZipArchiveEntry zipEntry = new ZipArchiveEntry(file, fileNameWithPath);
-
-                                zipOut.putArchiveEntry(zipEntry);
-
-                                try (InputStream inputStream = Files.newInputStream(file.toPath())) {
-                                    byte[] buffer = new byte[1048576];
-                                    int length;
-                                    while ((length = inputStream.read(buffer)) > 0) {
-                                        zipOut.write(buffer, 0, length);
-                                    }
-                                }
-
-                                zipOut.closeArchiveEntry();
+                                createAndWriteFile(zipOut, path, zipEntry);
                             } catch (Exception e) {
                                 throw new RuntimeException(e);
                             }
@@ -148,6 +123,19 @@ public class ZipUtils {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
 
+    private static void createAndWriteFile(ZipArchiveOutputStream zipOut, Path file, ZipArchiveEntry zipEntry) throws IOException {
+        zipOut.putArchiveEntry(zipEntry);
+
+        try (InputStream inputStream = Files.newInputStream(file)) {
+            byte[] buffer = new byte[1048576];
+            int length;
+            while ((length = inputStream.read(buffer)) > 0) {
+                zipOut.write(buffer, 0, length);
+            }
+        }
+
+        zipOut.closeArchiveEntry();
     }
 }

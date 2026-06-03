@@ -3,7 +3,7 @@ package ru.azorium.launchserver.utils.hash;
 import com.google.gson.JsonObject;
 import ru.azorium.launchserver.GlobalObjects;
 import ru.azorium.launchserver.LauncherApplication;
-import ru.azorium.launchserver.utils.JsonHelper;
+import ru.azorium.launchserver.utils.gson.JsonHelper;
 import ru.azorium.launchserver.utils.ZipUtils;
 
 import java.io.File;
@@ -18,12 +18,12 @@ import java.util.List;
 import java.util.stream.Stream;
 
 public class Hashes {
-    static Path clientsHashesFilePath = LauncherApplication.hashesPath.resolve("clients.json");
-    static Path assetsHashesFilePath = LauncherApplication.hashesPath.resolve("assets.json");
-    public static Path launcherHashesFilePath = LauncherApplication.hashesPath.resolve("launcher.json");
+    private static final Path clientsHashesFilePath = LauncherApplication.hashesPath.resolve("clients.json");
+    private static final Path assetsHashesFilePath = LauncherApplication.hashesPath.resolve("assets.json");
+    public static final Path launcherHashesFilePath = LauncherApplication.hashesPath.resolve("launcher.json");
 
     public static void createClientsManifest(String folderName) {
-        JsonObject clientsObj = getJsonObj(clientsHashesFilePath);
+        JsonObject clientsObj = JsonHelper.getObjectFromPath(clientsHashesFilePath);
         List<Path> filesList = new ArrayList<>();
 
         try (Stream<Path> stream = Files.walk(LauncherApplication.clientsPath, 1)) {
@@ -51,11 +51,11 @@ public class Hashes {
             throw new RuntimeException(e);
         }
 
-        saveObjectToFile(clientsHashesFilePath, clientsObj);
+        JsonHelper.saveFromObjToFile(clientsHashesFilePath, clientsObj);
     }
 
     public static void createAssetsManifest(String version) {
-        JsonObject assetsObj = getJsonObj(assetsHashesFilePath);
+        JsonObject assetsObj = JsonHelper.getObjectFromPath(assetsHashesFilePath);
         Path indexesPath = LauncherApplication.assetsPath.resolve("indexes");
 
         try (Stream<Path> stream = Files.walk(indexesPath)) {
@@ -66,16 +66,10 @@ public class Hashes {
                         List<Path> assetFilesList = new ArrayList<>();
                         assetFilesList.add(path);
 
-                        JsonObject versionAssetsObj;
+                        JsonObject versionAssetsObj = JsonHelper.getObjectFromPath(path);
                         String versionElName = path.getFileName().toString();
 
                         assetsObj.add(versionElName, new JsonObject());
-
-                        try (InputStream is = new URL(path.toUri().toURL().toString()).openStream()) {
-                            versionAssetsObj = GlobalObjects.gson.fromJson(new InputStreamReader(is), JsonObject.class);
-                        } catch (Exception e) {
-                            throw new RuntimeException(e);
-                        }
 
                         JsonHelper.getObject(versionAssetsObj, "objects").asMap().forEach((key, value) -> {
                             String hash = value.getAsJsonObject().get("hash").getAsString();
@@ -100,11 +94,11 @@ public class Hashes {
             throw new RuntimeException(e);
         }
 
-        saveObjectToFile(assetsHashesFilePath, assetsObj);
+        JsonHelper.saveFromObjToFile(assetsHashesFilePath, assetsObj);
     }
 
     public static void createLauncherManifest() {
-        JsonObject manifestObj = getJsonObj(launcherHashesFilePath);
+        JsonObject manifestObj = JsonHelper.getObjectFromPath(launcherHashesFilePath);
 
         try (Stream<Path> stream = Files.walk(LauncherApplication.launcherPath)) {
             stream
@@ -121,19 +115,7 @@ public class Hashes {
             throw new RuntimeException(e);
         }
 
-        saveObjectToFile(launcherHashesFilePath, manifestObj);
-    }
-
-    public static JsonObject getJsonObj(Path manifestPath) {
-        if (!Files.exists(manifestPath)) {
-            return new JsonObject();
-        } else {
-            try (InputStream is = manifestPath.toUri().toURL().openStream()) {
-                return GlobalObjects.gson.fromJson(new InputStreamReader(is), JsonObject.class);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
+        JsonHelper.saveFromObjToFile(launcherHashesFilePath, manifestObj);
     }
 
     static boolean clientsFilter(Path path, String value) {
@@ -151,13 +133,4 @@ public class Hashes {
             return path.getFileName().toString().equals(version + ".json");
         }
     }
-
-    static void saveObjectToFile(Path filePath, JsonObject obj) {
-        try (FileWriter writer = new FileWriter(filePath.toString())) {
-            writer.write(GlobalObjects.gson.toJson(obj));
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
 }

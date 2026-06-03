@@ -8,12 +8,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.azorium.launchserver.GlobalObjects;
 import ru.azorium.launchserver.LauncherApplication;
-import ru.azorium.launchserver.dto.starter.Forge;
 import ru.azorium.launchserver.utils.FileUtils;
-import ru.azorium.launchserver.utils.JsonHelper;
+import ru.azorium.launchserver.utils.gson.JsonHelper;
 import ru.azorium.launchserver.utils.MavenUrls;
 
 import java.io.*;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -108,11 +108,7 @@ public class ForgeInstall {
 
         installerJarPath = clientPath.resolve(fileName);
 
-        try (InputStream is = new URL(downloadUrl).openStream()) {
-            Files.copy(is, installerJarPath, StandardCopyOption.REPLACE_EXISTING);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        FileUtils.downloadFileFromURL(downloadUrl, installerJarPath);
     }
 
     void copyForgeManifest() throws IOException {
@@ -124,15 +120,8 @@ public class ForgeInstall {
         extractFromInstaller(manifestFileName, forgeManifestPath);
     }
 
-    void downloadFromInstaller() {
-        JsonObject forgeManifestObject;
-
-        try (InputStreamReader reader = new InputStreamReader(forgeManifestPath.toFile().toURL().openStream())) {
-            forgeManifestObject = GlobalObjects.gson.fromJson(reader, JsonObject.class);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
+    void downloadFromInstaller() throws IOException {
+        JsonObject forgeManifestObject = JsonHelper.getObjectFromPath(forgeManifestPath);
         JsonArray librariesArray = JsonHelper.getArray(forgeManifestObject, "versionInfo", "libraries");
 
         logger.info("Установка библиотек: ");
@@ -164,17 +153,12 @@ public class ForgeInstall {
                     String libUrl = urlForDownload + "/" + pathedLibUrl;
                     Path libFullPath = librariesPath.resolve(pathedLibUrl);
                     if (!Files.exists(libFullPath)) {
-                        try (InputStream is = new URL(libUrl).openStream()) {
-                            FileUtils.createDirectories(librariesPath.resolve(pathedLibUrl).getParent());
-                            Files.copy(is, libFullPath, StandardCopyOption.REPLACE_EXISTING);
-                        } catch (Exception e) {
-                            logger.info("Не удалось скачать: {}", e.getMessage());
-                        }
+                        FileUtils.createDirectories(librariesPath.resolve(pathedLibUrl).getParent());
+                        FileUtils.downloadFileFromURL(libUrl, libFullPath);
                     }
 
                 });
-
-
+        
         try {
             String forgeFileName = String.format("forge-%s-universal.jar", fullVersion);
             Path forgeFilePath = librariesPath.resolve(String.format("net/minecraftforge/forge/%s/%s", fullVersion, forgeFileName));

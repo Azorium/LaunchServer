@@ -4,27 +4,26 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import ru.azorium.launchserver.GlobalObjects;
 import ru.azorium.launchserver.LauncherApplication;
-import ru.azorium.launchserver.commands.logic.syncUp.SyncUp;
-import ru.azorium.launchserver.commands.logic.syncUp.actions.ProfilesSync;
+import ru.azorium.launchserver.dto.ClientProfile;
+import ru.azorium.launchserver.utils.gson.JsonHelper;
 
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
+import static ru.azorium.launchserver.GlobalObjects.gson;
+
 public class CreateProfileJson {
-    static Path profilePath;
-    static JsonObject clientProfileObj = new JsonObject();
-    static int minorNum;
-
-    static JsonObject mcManifestObj;
-    static JsonObject loaderManifestObj;
-
+    Path profilePath;
+    ClientProfile clientProfileObj;
+    int minorNum;
+    JsonObject mcManifestObj;
+    JsonObject loaderManifestObj;
     public String clientName;
     public String mcVersion;
     public String loaderType;
@@ -67,9 +66,9 @@ public class CreateProfileJson {
         paths.forEach((manifest, path) -> {
             try (InputStreamReader reader = new InputStreamReader(path.toFile().toURL().openStream())) {
                 if (manifest.equals("mcManifest")) {
-                    mcManifestObj = GlobalObjects.gson.fromJson(reader, JsonObject.class);
+                    mcManifestObj = gson.fromJson(reader, JsonObject.class);
                 } else {
-                    loaderManifestObj = GlobalObjects.gson.fromJson(reader, JsonObject.class);
+                    loaderManifestObj = gson.fromJson(reader, JsonObject.class);
                 }
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -78,33 +77,29 @@ public class CreateProfileJson {
     }
 
     void mergeManifests() {
-        clientProfileObj.addProperty("id", setProfileId());
-        clientProfileObj.addProperty("mcVersion", mcVersion);
-        clientProfileObj.addProperty("loaderType", loaderType);
-        clientProfileObj.addProperty("loaderVersion", loaderVersion);
+        clientProfileObj = new ClientProfile();
+        clientProfileObj.frontend = new ClientProfile.Frontend();
+        clientProfileObj.backend = new ClientProfile.Backend();
+        clientProfileObj.backend.arguments = new ClientProfile.Arguments();
+        clientProfileObj.backend.classpaths = new ClientProfile.Classpaths();
 
-        clientProfileObj.add("frontend", new JsonObject());
-        clientProfileObj.add("backend", new JsonObject());
+        clientProfileObj.id = setProfileId();
+        clientProfileObj.mcVersion = mcVersion;
+        clientProfileObj.loaderType = loaderType;
+        clientProfileObj.loaderVersion = loaderVersion;
+        clientProfileObj.optionalMods = new ArrayList<>();
 
-        JsonObject frontendJson = clientProfileObj.get("frontend").getAsJsonObject();
-        JsonObject backendJson = clientProfileObj.get("backend").getAsJsonObject();
+        clientProfileObj.frontend.name = clientName;
+        clientProfileObj.frontend.description = "Client description";
+        clientProfileObj.frontend.image = "/assets/images/default.jpg";
 
-        frontendJson.addProperty("name", clientName);
-        frontendJson.addProperty("description", "Client description");
-        frontendJson.addProperty("image", "/assets/images/default.jpg");
+        clientProfileObj.backend.ip = "localhost";
+        clientProfileObj.backend.port = "25565";
+        clientProfileObj.backend.folderName = clientName;
+        clientProfileObj.backend.javaVersion = JsonHelper.getString(mcManifestObj, "javaVersion", "majorVersion");
+        clientProfileObj.backend.mainClass = getMainClass();
 
-        backendJson.addProperty("ip", "localhost");
-        backendJson.addProperty("port", "25565");
-        backendJson.addProperty("folderName", clientName);
-        backendJson.addProperty("javaVersion", JsonHelper.getString(mcManifestObj, "javaVersion", "majorVersion"));
-        backendJson.addProperty("mainClass", getMainClass());
-        backendJson.add("arguments", new JsonObject());
-        backendJson.add("classpaths", new JsonObject());
-        JsonObject classpathsObj = backendJson.get("classpaths").getAsJsonObject();
-
-        clientProfileObj.add("optionalMods", new JsonArray());
-
-        setClasspaths(classpathsObj);
+        setClasspaths();
         setGameArguments();
     }
 
@@ -112,14 +107,13 @@ public class CreateProfileJson {
         return minorNum < 12 ? JsonHelper.getString(loaderManifestObj, "versionInfo", "mainClass") : JsonHelper.getString(loaderManifestObj, "mainClass");
     }
 
-    private void setClasspaths(JsonObject classpathsObj) {
-        String[] osArray = new String[]{"windows", "linux", "macos"};
-        for (String os : osArray) {
-            try {
-                classpathsObj.addProperty(os, new ClasspathBuilder(clientPath, mcVersion, GlobalObjects.gson, loaderVersion, loaderType, os).build());
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+    private void setClasspaths() {
+        try {
+            clientProfileObj.backend.classpaths.linux = new ClasspathBuilder(clientPath, mcVersion, gson, loaderVersion, loaderType, "linux").build();
+            clientProfileObj.backend.classpaths.macos = new ClasspathBuilder(clientPath, mcVersion, gson, loaderVersion, loaderType, "macos").build();
+            clientProfileObj.backend.classpaths.windows = new ClasspathBuilder(clientPath, mcVersion, gson, loaderVersion, loaderType, "windows").build();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -138,46 +132,42 @@ public class CreateProfileJson {
 
     void setGameArguments() {
         int minor = minorNum;
-        String gameArgs;
-
-        JsonObject argumentsJson = clientProfileObj.getAsJsonObject("backend").getAsJsonObject("arguments");
 
         if (minor < 12) {
-            gameArgs = JsonHelper.getString(loaderManifestObj, "versionInfo", "minecraftArguments");
+            clientProfileObj.backend.arguments.game = Collections.singletonList(JsonHelper.getString(loaderManifestObj, "versionInfo", "minecraftArguments"));
         } else if (minor < 16) {
-            gameArgs = JsonHelper.getString(loaderManifestObj, "minecraftArguments");
+            clientProfileObj.backend.arguments.game = Collections.singletonList(JsonHelper.getString(loaderManifestObj, "minecraftArguments"));
         } else {
-            argumentsJson.add("game", new JsonArray());
-            JsonArray gameJson = argumentsJson.getAsJsonArray("game");
+            clientProfileObj.backend.arguments.game = new ArrayList<>();
+            clientProfileObj.backend.arguments.jvm = new ArrayList<>();
 
             JsonHelper.getArray(mcManifestObj, "arguments", "game").asList().stream()
                     .filter(el -> {
                         return !el.isJsonObject();
                     })
-                    .forEach(gameJson::add);
-            JsonHelper.getArray(loaderManifestObj, "arguments", "game").asList().forEach(gameJson::add);
+                    .forEach(el -> clientProfileObj.backend.arguments.game.add(el.getAsString()));
+            JsonHelper.getArray(loaderManifestObj, "arguments", "game").asList().forEach(el -> clientProfileObj.backend.arguments.game.add(el.getAsString()));
 
-            argumentsJson.add("jvm", new JsonArray());
-            JsonArray jvmJson = argumentsJson.getAsJsonArray("jvm");
+
             JsonHelper.getArray(mcManifestObj, "arguments", "jvm").asList().stream()
                     .filter(el -> {
                         return !el.toString().equals("\"-cp\"") && !el.toString().equals("\"${classpath}\"") && !el.isJsonObject() && !el.toString().contains("library.path");
                     })
-                    .forEach(jvmJson::add);
-            JsonHelper.getArray(loaderManifestObj, "arguments", "jvm").asList().forEach(jvmJson::add);
+                    .forEach(el -> clientProfileObj.backend.arguments.jvm.add(el.getAsString()));
+            JsonHelper.getArray(loaderManifestObj, "arguments", "jvm").asList().forEach(el -> clientProfileObj.backend.arguments.jvm.add(el.getAsString()));
 
-            return;
         }
-
-        argumentsJson.addProperty("game", gameArgs);
     }
 
     void createProfileFile() {
-        try (FileWriter writer = new FileWriter(profilePath.toString())) {
-            GlobalObjects.gson.toJson(clientProfileObj, writer);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        List<String> game = clientProfileObj.backend.arguments.game;
+        JsonObject jsonObject = gson.toJsonTree(clientProfileObj).getAsJsonObject();
+
+        if (game.size() == 1) {
+            jsonObject.getAsJsonObject("backend").getAsJsonObject("arguments").addProperty("game", game.get(0));
         }
+
+        JsonHelper.saveFromObjToFile(profilePath, jsonObject);
     }
 
 }

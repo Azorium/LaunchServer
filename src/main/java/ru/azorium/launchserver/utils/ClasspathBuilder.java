@@ -8,6 +8,7 @@ import ru.azorium.launchserver.dto.starter.Fabric;
 import ru.azorium.launchserver.dto.starter.Forge;
 import ru.azorium.launchserver.dto.starter.Minecraft;
 import ru.azorium.launchserver.dto.starter.Neoforge;
+import ru.azorium.launchserver.utils.gson.JsonHelper;
 
 import java.io.File;
 import java.io.IOException;
@@ -68,20 +69,20 @@ public class ClasspathBuilder {
 
     public String build() throws IOException {
         getVersionsFiles();
-        getMinecraftManifest();
+        minecraftManifest = JsonHelper.objectDeserializerFromPath(minecraftManifestPath, Minecraft.Manifest.class);
         buildMinecraftClasspath();
 
         switch (loader) {
             case "forge" -> {
-                getForgeManifest();
+                forgeManifest = JsonHelper.objectDeserializerFromPath(loaderManifestPath, Forge.Manifest.class);
                 buildForgeClasspath();
             }
             case "fabric" -> {
-                getFabricManifest();
+                fabricManifest = JsonHelper.objectDeserializerFromPath(loaderManifestPath, Fabric.Manifest.class);
                 buildFabricClasspath();
             }
             case "neoforge" -> {
-                getNeoforgeManifest();
+                neoforgeManifest = JsonHelper.objectDeserializerFromPath(loaderManifestPath, Neoforge.Manifest.class);
                 buildNeoforgeClasspath();
             }
             case "vanilla" -> {
@@ -118,14 +119,6 @@ public class ClasspathBuilder {
                 });
     }
 
-    private void getMinecraftManifest() {
-        try (Reader reader = Files.newBufferedReader(minecraftManifestPath)) {
-            minecraftManifest = gson.fromJson(reader, Minecraft.Manifest.class);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     private void buildMinecraftClasspath() {
         minecraftManifest.libraries.forEach(lib -> {
             if (lib.downloads.artifact != null) {
@@ -149,22 +142,6 @@ public class ClasspathBuilder {
                 }
             }
         });
-    }
-
-    private void getForgeManifest() {
-        try (Reader reader = Files.newBufferedReader(loaderManifestPath)) {
-            forgeManifest = gson.fromJson(reader, Forge.Manifest.class);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private void getFabricManifest() {
-        try (Reader reader = Files.newBufferedReader(loaderManifestPath)) {
-            fabricManifest = gson.fromJson(reader, Fabric.Manifest.class);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     private void buildFabricClasspath() {
@@ -194,14 +171,6 @@ public class ClasspathBuilder {
             });
         }
 
-    }
-
-    private void getNeoforgeManifest() {
-        try (Reader reader = Files.newBufferedReader(loaderManifestPath)) {
-            neoforgeManifest = gson.fromJson(reader, Neoforge.Manifest.class);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     private void buildNeoforgeClasspath() {

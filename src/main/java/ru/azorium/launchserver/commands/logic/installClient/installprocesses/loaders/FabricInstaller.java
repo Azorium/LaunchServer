@@ -3,6 +3,7 @@ package ru.azorium.launchserver.commands.logic.installClient.installprocesses.lo
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.azorium.launchserver.LauncherApplication;
+import ru.azorium.launchserver.utils.FileUtils;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -33,10 +34,7 @@ public class FabricInstaller {
         logger.info("Установка инсталлера");
         installerPath = clientPath.resolve("fabric-installer.jar");
 
-        try (InputStream is = new URL(installerDownloadUrl).openStream()) {
-            Files.copy(is, installerPath, StandardCopyOption.REPLACE_EXISTING);
-        }
-
+        FileUtils.downloadFileFromURL(installerDownloadUrl, installerPath);
         Files.copy(clientPath.resolve("versions").resolve(mcVersion).resolve(mcVersion + ".json"), clientPath.resolve("launcher_profiles.json"));
 
         installerExec();

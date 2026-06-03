@@ -3,12 +3,13 @@ package ru.azorium.launchserver.commands.logic.installClient.installprocesses.lo
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.azorium.launchserver.LauncherApplication;
-import ru.azorium.launchserver.commands.logic.installClient.installprocesses.MinecraftInstall;
+import ru.azorium.launchserver.utils.FileUtils;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -29,17 +30,13 @@ public class NeoforgeInstaller {
         this.clientPath = LauncherApplication.clientsPath.resolve(clientName);
     }
 
-    public void start() {
+    public void start() throws IOException {
         logger.info("Установка инсталлера");
         installerPath = clientPath.resolve("neoforge-installer.jar");
         String installerDownloadUrl = String.format("%s%s/neoforge-%s-installer.jar", neoforgeMavenUrl, loaderVersion, loaderVersion);
 
-        try (InputStream is = new URL(installerDownloadUrl).openStream()) {
-            Files.copy(is, installerPath, StandardCopyOption.REPLACE_EXISTING);
-            Files.copy(clientPath.resolve("versions").resolve(mcVersion).resolve(mcVersion + ".json"), clientPath.resolve("launcher_profiles.json"));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        FileUtils.downloadFileFromURL(new URL(installerDownloadUrl).toString(), installerPath);
+        Files.copy(clientPath.resolve("versions").resolve(mcVersion).resolve(mcVersion + ".json"), clientPath.resolve("launcher_profiles.json"));
 
         installerExec();
     }

@@ -48,7 +48,6 @@ public class FileDownloadController {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-        headers.setContentDispositionFormData("attachment", "xz" + ".zip");
         headers.setContentLength(zipBytes.length);
 
         return new ResponseEntity<>(zipBytes, headers, HttpStatus.OK);

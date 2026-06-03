@@ -1,13 +1,18 @@
-package ru.azorium.launchserver.utils;
+package ru.azorium.launchserver.utils.gson;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import ru.azorium.launchserver.GlobalObjects;
+import ru.azorium.launchserver.dto.starter.Fabric;
 
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+import static ru.azorium.launchserver.GlobalObjects.gson;
 
 public class JsonHelper {
 
@@ -78,8 +83,8 @@ public class JsonHelper {
         return null;
     }
 
-    public static JsonObject getObjectFromURL(Gson gson, URL url) throws IOException {
-        try (InputStreamReader reader = new InputStreamReader(url.openStream())) {
+    public static JsonObject getObjectFromURL(String url) throws IOException {
+        try (InputStreamReader reader = new InputStreamReader(new URL(url).openStream())) {
             JsonObject result = gson.fromJson(reader, JsonObject.class);
             if (result == null) {
                 throw new IOException("GSON returned null for URL: " + url);
@@ -87,6 +92,34 @@ public class JsonHelper {
             return result;
         } catch (Exception e) {
             throw new IOException("Failed to parse JSON from " + url + ": " + e.getMessage(), e);
+        }
+    }
+
+    public static JsonObject getObjectFromPath(Path jsonPath) {
+        if (!Files.exists(jsonPath)) {
+            return new JsonObject();
+        } else {
+            try (InputStream is = jsonPath.toUri().toURL().openStream()) {
+                return GlobalObjects.gson.fromJson(new InputStreamReader(is), JsonObject.class);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    public static void saveFromObjToFile(Path filePath, JsonObject obj){
+        try (FileWriter writer = new FileWriter(filePath.toString())) {
+            gson.toJson(obj, writer);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static <T> T objectDeserializerFromPath(Path path, Class<T> classOfT){
+        try (Reader reader = Files.newBufferedReader(path)) {
+            return gson.fromJson(reader, classOfT);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 }

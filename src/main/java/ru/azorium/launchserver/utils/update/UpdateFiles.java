@@ -5,10 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.azorium.launchserver.GlobalObjects;
 import ru.azorium.launchserver.LauncherApplication;
-import ru.azorium.launchserver.controllers.FileUpdaterController;
-import ru.azorium.launchserver.utils.JsonHelper;
-import ru.azorium.launchserver.utils.ZipUtils;
-import ru.azorium.launchserver.utils.hash.Hashes;
+import ru.azorium.launchserver.utils.gson.JsonHelper;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -16,7 +13,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Stream;
 
 public class UpdateFiles {
@@ -32,8 +28,7 @@ public class UpdateFiles {
     public static byte[] updateClient(JsonObject objFromRequest, String date) {
         try {
             String clientFolderName = objFromRequest.get("clientFolderName").getAsString();
-
-            JsonObject clientsObjFromServer = JsonHelper.getObjectFromURL(GlobalObjects.gson, LauncherApplication.hashesPath.resolve("clients.json").toUri().toURL());
+            JsonObject clientsObjFromServer = JsonHelper.getObjectFromPath(LauncherApplication.hashesPath.resolve("clients.json"));
             JsonObject serverClientObj = clientsObjFromServer.getAsJsonObject(clientFolderName);
 
             JsonObject filesObjForArchive = new JsonObject();
@@ -83,7 +78,7 @@ public class UpdateFiles {
             });
 
             Path jsonFilePath = LauncherApplication.tmpPath.resolve("files-" + date + ".json");
-            createJsonFile(jsonFilePath, filesObjForArchive);
+            JsonHelper.saveFromObjToFile(jsonFilePath, filesObjForArchive);
             filesToPutArchive.add(Path.of(jsonFilePath.toString().replace(LauncherApplication.rootPath + File.separator, "")));
 
             return ByteArrayZip.create(filesToPutArchive);
@@ -95,7 +90,7 @@ public class UpdateFiles {
     public static byte[] updateAssets(JsonObject objFromRequest, String date) {
         try {
             String mcVersion = objFromRequest.get("mcVersion").getAsString();
-            JsonObject assetObjFromServer = JsonHelper.getObjectFromURL(GlobalObjects.gson, LauncherApplication.hashesPath.resolve("assets.json").toUri().toURL()).get(mcVersion + ".json").getAsJsonObject();
+            JsonObject assetObjFromServer = JsonHelper.getObjectFromPath(LauncherApplication.hashesPath.resolve("assets.json")).get(mcVersion + ".json").getAsJsonObject();
             JsonObject assetObjFromRequest = objFromRequest.get("data").getAsJsonObject();
 
             JsonObject filesObjForArchive = new JsonObject();
@@ -127,7 +122,7 @@ public class UpdateFiles {
             });
 
             Path jsonFilePath = LauncherApplication.tmpPath.resolve("files-" + date + ".json");
-            createJsonFile(jsonFilePath, filesObjForArchive);
+            JsonHelper.saveFromObjToFile(jsonFilePath, filesObjForArchive);
             filesToPutArchive.add(Path.of(jsonFilePath.toString().replace(LauncherApplication.rootPath + File.separator, "")));
 
             return ByteArrayZip.create(filesToPutArchive);
@@ -148,13 +143,4 @@ public class UpdateFiles {
             throw new RuntimeException(e);
         }
     }
-
-    static void createJsonFile(Path jsonFilePath, JsonObject filesObjForArchive) {
-        try (FileWriter writer = new FileWriter(jsonFilePath.toFile())) {
-            GlobalObjects.gson.toJson(filesObjForArchive, writer);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
 }
