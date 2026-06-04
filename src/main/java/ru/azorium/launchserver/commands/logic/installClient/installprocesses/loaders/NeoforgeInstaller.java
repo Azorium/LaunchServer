@@ -7,13 +7,10 @@ import ru.azorium.launchserver.utils.FileUtils;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 
 public class NeoforgeInstaller {
     private static final Logger logger = LoggerFactory.getLogger(NeoforgeInstaller.class);

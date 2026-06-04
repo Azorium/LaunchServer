@@ -1,6 +1,7 @@
 package ru.azorium.launchserver.controllers;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.azorium.launchserver.dto.JoinRequest;
@@ -22,6 +23,9 @@ public class YggdrasilAuthController {
 
     @Autowired
     JwtUtils jwtUtils;
+
+    @Value("${app.skin_api_url}")
+    private String skinApiUrl;
 
     @GetMapping
     public Map<String, Object> metadata() {
@@ -66,7 +70,7 @@ public class YggdrasilAuthController {
                 System.currentTimeMillis(),
                 profileId,
                 username,
-                "http://localhost:3001/uploads/skins/" + username + ".png"
+                skinApiUrl + username + ".png"
         );
 
         String encoded = Base64.getEncoder().encodeToString(texturesJson.getBytes(StandardCharsets.UTF_8));
