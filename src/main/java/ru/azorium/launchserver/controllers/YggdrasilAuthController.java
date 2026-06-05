@@ -27,6 +27,9 @@ public class YggdrasilAuthController {
     @Value("${app.skin_api_url}")
     private String skinApiUrl;
 
+    @Value("${app.cape_api_url}")
+    private String capeApiUrl;
+
     @GetMapping
     public Map<String, Object> metadata() {
         return Map.of(
@@ -54,6 +57,19 @@ public class YggdrasilAuthController {
             return ResponseEntity.notFound().build();
         }
 
+        String skinMetadata = user.isSlimSkin() ? """
+                    ,"metadata": {
+                      "model": "slim"
+                    }
+                """ : "";
+
+        String userCapeHash = user.getCapeHash();
+        String capeJson = userCapeHash != null ? """
+                ,"CAPE": {
+                  "url": "%s"
+                }
+                """.formatted(capeApiUrl + userCapeHash + ".png") : "";
+
         String profileId = user.getUuid().replace("-", "");
         String texturesJson = """
                 {
@@ -63,14 +79,18 @@ public class YggdrasilAuthController {
                   "textures": {
                     "SKIN": {
                       "url": "%s"
+                      %s
                     }
+                    %s
                   }
                 }
                 """.formatted(
                 System.currentTimeMillis(),
                 profileId,
                 username,
-                skinApiUrl + username + ".png"
+                skinApiUrl + user.getSkinHash() + ".png",
+                skinMetadata,
+                capeJson
         );
 
         String encoded = Base64.getEncoder().encodeToString(texturesJson.getBytes(StandardCharsets.UTF_8));
@@ -113,6 +133,19 @@ public class YggdrasilAuthController {
             return ResponseEntity.notFound().build();
         }
 
+        String skinMetadata = user.isSlimSkin() ? """
+                    ,"metadata": {
+                      "model": "slim"
+                    }
+                """ : "";
+
+        String userCapeHash = user.getCapeHash();
+        String capeJson = userCapeHash != null ? """
+                ,"CAPE": {
+                  "url": "%s"
+                }
+                """.formatted(capeApiUrl + userCapeHash + ".png") : "";
+
         String texturesJson = """
                 {
                   "timestamp": %d,
@@ -121,14 +154,18 @@ public class YggdrasilAuthController {
                   "textures": {
                     "SKIN": {
                       "url": "%s"
+                      %s
                     }
+                    %s
                   }
                 }
                 """.formatted(
                 System.currentTimeMillis(),
                 profileId,
                 user.getLogin(),
-                "http://localhost:3001/uploads/skins/" + user.getLogin() + ".png"
+                skinApiUrl + user.getSkinHash() + ".png",
+                skinMetadata,
+                capeJson
         );
 
         String encoded = Base64.getEncoder().encodeToString(texturesJson.getBytes(StandardCharsets.UTF_8));
