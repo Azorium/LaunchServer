@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.azorium.launchserver.GlobalObjects;
 import ru.azorium.launchserver.LauncherApplication;
+import ru.azorium.launchserver.dto.ClientProfile;
 import ru.azorium.launchserver.utils.gson.JsonHelper;
 
 import java.io.File;
@@ -16,20 +17,14 @@ import java.util.List;
 import java.util.stream.Stream;
 
 public class UpdateFiles {
-
     private static final Logger log = LoggerFactory.getLogger(UpdateFiles.class);
-    static List<String> clientDependentFiles = new ArrayList<>();
-
-    static {
-        clientDependentFiles.add("options");
-        clientDependentFiles.add("config");
-    }
 
     public static byte[] updateClient(JsonObject objFromRequest, String date) {
         try {
             String clientFolderName = objFromRequest.get("clientFolderName").getAsString();
             JsonObject clientsObjFromServer = JsonHelper.getObjectFromPath(LauncherApplication.hashesPath.resolve("clients.json"));
             JsonObject serverClientObj = clientsObjFromServer.getAsJsonObject(clientFolderName);
+            ClientProfile clientProfile = JsonHelper.objectDeserializerFromPath(LauncherApplication.profilesPath.resolve(clientFolderName + ".json"), ClientProfile.class);
 
             JsonObject filesObjForArchive = new JsonObject();
             filesObjForArchive.add("toDelete", new JsonArray());
@@ -46,7 +41,7 @@ public class UpdateFiles {
 
                 if (file == null) {
                     Stream.of(key)
-                            .filter(k -> clientDependentFiles.stream().noneMatch(k::startsWith))
+                            .filter(k -> clientProfile.backend.updateExclusions.stream().noneMatch(k::startsWith))
                             .forEach(toDeleteJson::add);
                     return;
                 }

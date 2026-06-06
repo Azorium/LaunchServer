@@ -1,13 +1,10 @@
 package ru.azorium.launchserver.utils;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import ru.azorium.launchserver.GlobalObjects;
 import ru.azorium.launchserver.LauncherApplication;
 import ru.azorium.launchserver.dto.ClientProfile;
 import ru.azorium.launchserver.utils.gson.JsonHelper;
 
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
@@ -82,6 +79,7 @@ public class CreateProfileJson {
         clientProfileObj.backend = new ClientProfile.Backend();
         clientProfileObj.backend.arguments = new ClientProfile.Arguments();
         clientProfileObj.backend.classpaths = new ClientProfile.Classpaths();
+        clientProfileObj.backend.updateExclusions = new ArrayList<>();
 
         clientProfileObj.id = setProfileId();
         clientProfileObj.mcVersion = mcVersion;

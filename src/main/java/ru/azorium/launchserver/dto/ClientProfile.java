@@ -22,6 +22,7 @@ public class ClientProfile {
         public String folderName;
         public String javaVersion;
         public String mainClass;
+        public List<String> updateExclusions;
         public Arguments arguments;
         public Classpaths classpaths;
     }
