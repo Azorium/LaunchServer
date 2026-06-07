@@ -14,14 +14,17 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.azorium.launchserver.GlobalObjects;
 import ru.azorium.launchserver.LauncherApplication;
+import ru.azorium.launchserver.utils.hash.Md5;
 import ru.azorium.launchserver.utils.update.UpdateFiles;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import static ru.azorium.launchserver.LauncherApplication.rootPath;
 
@@ -60,13 +63,69 @@ public class FileUpdaterController {
     @PostMapping("/launcher")
     public ResponseEntity<byte[]> updateLauncher(@RequestBody String json) {
         byte[] zipBytes = UpdateFiles.updateLauncher(json);
-        
+
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
         headers.setContentDispositionFormData("attachment", "launcher.zip");
         headers.setContentLength(zipBytes.length);
 
         return new ResponseEntity<>(zipBytes, headers, HttpStatus.OK);
+    }
+
+    @PostMapping("/launcherguard")
+    public ResponseEntity<Resource> updateLauncherGuard(@RequestBody String json) {
+        try {
+            JsonObject jsonObject = JsonParser.parseString(json).getAsJsonObject();
+            String fileExtension = jsonObject.get("fileExtension").getAsString();
+            String reqFileHash = jsonObject.get("hash").getAsString();
+
+            Path guardPath = LauncherApplication.updatesPath.resolve("LauncherGuard" + fileExtension);
+            String serverFileHash = Md5.getFileMd5(guardPath);
+
+            if (serverFileHash.equals(reqFileHash)) {
+                return ResponseEntity.status(403).build();
+            }
+
+            Resource resource = new UrlResource(guardPath.toUri());
+            String contentType = Files.probeContentType(guardPath);
+            if (contentType == null) {
+                contentType = "application/octet-stream";
+            }
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"" + resource.getFilename() + "\"")
+                    .body(resource);
+
+        } catch (IOException e) {
+            return ResponseEntity.status(500).build();
+        }
+    }
+
+    @PostMapping("/authlib")
+    public ResponseEntity<Resource> updateAuthlib(@RequestBody String json) {
+        try {
+            JsonObject jsonObject = JsonParser.parseString(json).getAsJsonObject();
+            String reqFileHash = jsonObject.get("hash").getAsString();
+
+            Path guardPath = LauncherApplication.updatesPath.resolve("authlib-injector.jar");
+            String serverFileHash = Md5.getFileMd5(guardPath);
+
+            if (serverFileHash.equals(reqFileHash)) {
+                return ResponseEntity.status(403).build();
+            }
+
+            Resource resource = new UrlResource(guardPath.toUri());
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"" + resource.getFilename() + "\"")
+                    .body(resource);
+
+        } catch (IOException e) {
+            return ResponseEntity.status(500).build();
+        }
     }
 
     @PostMapping("/launcher/check")
