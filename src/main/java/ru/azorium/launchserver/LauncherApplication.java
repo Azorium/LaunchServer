@@ -5,6 +5,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import ru.azorium.launchserver.utils.gson.JsonHelper;
 import ru.azorium.launchserver.utils.hash.Hashes;
+import ru.azorium.launchserver.utils.hash.Md5;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -29,9 +30,12 @@ public class LauncherApplication {
     public static Path tmpPath;
     public static Path updatesPath;
     public static Path launcherPath;
+    public static Path launcherComponentsPath;
     public static Path launcherCachesPath;
+    public static Path runtimeZipPath;
 
     public static Map<String, String> launcherHashes = new HashMap<>();
+    public static String runtimeZipHash;
 
     public static void main(String[] args) throws IOException {
         rootPath = Path.of(System.getProperty("user.dir"));
@@ -49,6 +53,8 @@ public class LauncherApplication {
         objectsPath = assetsPath.resolve("objects");
         javaPath = updatesPath.resolve("java");
         launcherPath = updatesPath.resolve("launcher");
+        launcherComponentsPath = launcherPath.resolve("components");
+        runtimeZipPath = launcherComponentsPath.resolve("runtime_dist.zip");
 
         createDirectories();
         setLauncherHashes();
@@ -73,7 +79,7 @@ public class LauncherApplication {
             Path[] paths = new Path[]{rootPath, clientsPath, javaPath,
                     profilesPath, assetsPath, hashesPath, cachesPath,
                     clientsCachesPath, assetsCachesPath, tmpPath,
-                    updatesPath, launcherPath, launcherCachesPath};
+                    updatesPath, launcherPath, launcherCachesPath, launcherComponentsPath};
             for (Path path : paths) {
                 Files.createDirectories(path);
             }
@@ -84,6 +90,7 @@ public class LauncherApplication {
 
     private static void setLauncherHashes() {
         try {
+            runtimeZipHash = Md5.getFileMd5(runtimeZipPath);
             JsonObject launcherHashesObj = JsonHelper.getObjectFromPath(Hashes.launcherHashesFilePath);
 
             if (!launcherHashesObj.isEmpty()) {

@@ -100,9 +100,10 @@ public class Hashes {
     public static void createLauncherManifest() {
         JsonObject manifestObj = JsonHelper.getObjectFromPath(launcherHashesFilePath);
 
-        try (Stream<Path> stream = Files.walk(LauncherApplication.launcherPath)) {
+        try (Stream<Path> stream = Files.walk(LauncherApplication.launcherPath, 1)) {
             stream
                     .skip(1)
+                    .filter(path -> !path.toFile().isDirectory())
                     .forEach(path -> {
                         String fileNameWithoutExtension = path.toString().replace(path.getParent() + File.separator, "").split("\\.")[0];
                         ZipUtils.createZipFromFilesWithoutEnclosure(LauncherApplication.launcherCachesPath, fileNameWithoutExtension + ".zip", new ArrayList<>(List.of(path)));

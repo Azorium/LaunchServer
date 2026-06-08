@@ -72,6 +72,29 @@ public class FileUpdaterController {
         return new ResponseEntity<>(zipBytes, headers, HttpStatus.OK);
     }
 
+    @PostMapping("/launcher/check")
+    public ResponseEntity<Object> updateLauncherCheckNeed(@RequestParam String checkType, @RequestBody String json) {
+        JsonObject reqObj = JsonParser.parseString(json).getAsJsonObject();
+        String runtimeZipHash = reqObj.get("runtimeZipHash").getAsString();
+        String launcherFileHash = reqObj.get("launcherFileHash").getAsString();
+
+        boolean runtimeZipIsNeeded = !LauncherApplication.runtimeZipHash.equals(runtimeZipHash);
+        boolean launcherFileIsNeeded = !LauncherApplication.launcherHashes.containsValue(launcherFileHash);
+
+        if (checkType.equals("files")) {
+            JsonObject filesCheckObj = new JsonObject();
+            filesCheckObj.addProperty("runtimeZipIsNeeded", runtimeZipIsNeeded);
+            filesCheckObj.addProperty("launcherFileIsNeeded", launcherFileIsNeeded);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            return new ResponseEntity<>(GlobalObjects.gson.toJson(filesCheckObj), headers, HttpStatus.OK);
+        }
+
+        return ResponseEntity.ok(runtimeZipIsNeeded || launcherFileIsNeeded);
+    }
+
     @PostMapping("/launcherguard")
     public ResponseEntity<Resource> updateLauncherGuard(@RequestBody String json) {
         try {
@@ -79,7 +102,7 @@ public class FileUpdaterController {
             String fileExtension = jsonObject.get("fileExtension").getAsString();
             String reqFileHash = jsonObject.get("hash").getAsString();
 
-            Path guardPath = LauncherApplication.updatesPath.resolve("LauncherGuard" + fileExtension);
+            Path guardPath = LauncherApplication.launcherComponentsPath.resolve("LauncherGuard" + fileExtension);
             String serverFileHash = Md5.getFileMd5(guardPath);
 
             if (serverFileHash.equals(reqFileHash)) {
@@ -109,7 +132,7 @@ public class FileUpdaterController {
             JsonObject jsonObject = JsonParser.parseString(json).getAsJsonObject();
             String reqFileHash = jsonObject.get("hash").getAsString();
 
-            Path guardPath = LauncherApplication.updatesPath.resolve("authlib-injector.jar");
+            Path guardPath = LauncherApplication.launcherComponentsPath.resolve("authlib-injector.jar");
             String serverFileHash = Md5.getFileMd5(guardPath);
 
             if (serverFileHash.equals(reqFileHash)) {
@@ -126,11 +149,6 @@ public class FileUpdaterController {
         } catch (IOException e) {
             return ResponseEntity.status(500).build();
         }
-    }
-
-    @PostMapping("/launcher/check")
-    public ResponseEntity<Boolean> updateLauncherCheck(@RequestBody String json) {
-        return ResponseEntity.ok(!LauncherApplication.launcherHashes.containsValue(json));
     }
 
 }
