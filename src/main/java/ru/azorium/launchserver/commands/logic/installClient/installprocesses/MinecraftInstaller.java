@@ -18,8 +18,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class MinecraftInstall {
-    private static final Logger logger = LoggerFactory.getLogger(MinecraftInstall.class);
+public class MinecraftInstaller {
+    private static final Logger logger = LoggerFactory.getLogger(MinecraftInstaller.class);
     private static final String overallMinecraftManifestUrl = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
     private static final String minecraftResourcesUrl = "https://resources.download.minecraft.net";
     private final String mcVersion;
@@ -30,7 +30,7 @@ public class MinecraftInstall {
     private record AssetToDownload(String hash, String subHash, Path path) {
     }
 
-    public MinecraftInstall(String clientName, String mcVersion) {
+    public MinecraftInstaller(String clientName, String mcVersion) {
         Path clientPath = LauncherApplication.clientsPath.resolve(clientName);
         this.librariesPath = clientPath.resolve("libraries");
         this.versionsPath = clientPath.resolve("versions");

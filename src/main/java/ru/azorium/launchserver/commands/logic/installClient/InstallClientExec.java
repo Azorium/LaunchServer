@@ -6,9 +6,9 @@ import ru.azorium.launchserver.LauncherApplication;
 import ru.azorium.launchserver.commands.logic.syncUp.SyncUp;
 import ru.azorium.launchserver.commands.logic.syncUp.actions.ProfilesSync;
 import ru.azorium.launchserver.utils.CreateProfileJson;
-import ru.azorium.launchserver.commands.logic.installClient.installprocesses.MinecraftInstall;
+import ru.azorium.launchserver.commands.logic.installClient.installprocesses.MinecraftInstaller;
 import ru.azorium.launchserver.commands.logic.installClient.installprocesses.loaders.FabricInstaller;
-import ru.azorium.launchserver.commands.logic.installClient.installprocesses.loaders.ForgeInstall;
+import ru.azorium.launchserver.commands.logic.installClient.installprocesses.loaders.ForgeInstaller;
 import ru.azorium.launchserver.commands.logic.installClient.installprocesses.loaders.NeoforgeInstaller;
 import ru.azorium.launchserver.utils.FileUtils;
 import ru.azorium.launchserver.utils.NativeExtractor;
@@ -42,11 +42,11 @@ public class InstallClientExec {
     }
 
     public void start() throws IOException {
-        boolean isInstalledAssets = new MinecraftInstall(clientName, mcVersion).start();
+        boolean isInstalledAssets = new MinecraftInstaller(clientName, mcVersion).start();
         NativeExtractor.start(versionsPath.resolve(mcVersion).resolve(mcVersion + ".json"), librariesPath, nativesPath);
 
         switch (loaderType) {
-            case "forge" -> new ForgeInstall(clientName, mcVersion, loaderVersion, versionsPath).start();
+            case "forge" -> new ForgeInstaller(clientName, mcVersion, loaderVersion, versionsPath).start();
             case "fabric" -> new FabricInstaller(clientName, mcVersion, loaderVersion).start();
             case "neoforge" -> new NeoforgeInstaller(clientName, mcVersion, loaderVersion).start();
             case "vanilla" -> {

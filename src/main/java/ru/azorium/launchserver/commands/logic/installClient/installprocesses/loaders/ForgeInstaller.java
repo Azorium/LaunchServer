@@ -13,8 +13,6 @@ import ru.azorium.launchserver.utils.gson.JsonHelper;
 import ru.azorium.launchserver.utils.MavenUrls;
 
 import java.io.*;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -23,8 +21,8 @@ import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
-public class ForgeInstall {
-    private static final Logger logger = LoggerFactory.getLogger(ForgeInstall.class);
+public class ForgeInstaller {
+    private static final Logger logger = LoggerFactory.getLogger(ForgeInstaller.class);
     private final String forgeMavenUrl = "https://maven.minecraftforge.net";
     private final String mcLibrariesUrl = "https://libraries.minecraft.net";
     private Path installerJarPath;
@@ -78,7 +76,7 @@ public class ForgeInstall {
         badLibs.add("launchwrapper");
     }
 
-    public ForgeInstall(String clientName, String mcVersion, String loaderVersion, Path versionsPath) {
+    public ForgeInstaller(String clientName, String mcVersion, String loaderVersion, Path versionsPath) {
         this.mcVersion = mcVersion;
         this.loaderVersion = loaderVersion;
         this.clientPath = LauncherApplication.clientsPath.resolve(clientName);
