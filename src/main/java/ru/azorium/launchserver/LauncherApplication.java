@@ -90,6 +90,8 @@ public class LauncherApplication {
 
     private static void setLauncherHashes() {
         try {
+            if (!Files.exists(runtimeZipPath)) return;
+
             runtimeZipHash = Md5.getFileMd5(runtimeZipPath);
             JsonObject launcherHashesObj = JsonHelper.getObjectFromPath(Hashes.launcherHashesFilePath);
 
