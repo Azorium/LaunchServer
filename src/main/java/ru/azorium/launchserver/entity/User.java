@@ -10,7 +10,7 @@ public class User {
     private Long id;
 
     @Column(unique = true, nullable = false, length = 16)
-    private String login;
+    private String username;
 
     @Column(unique = true, nullable = false)
     private String email;
@@ -33,11 +33,11 @@ public class User {
     @Column(name = "skin_hash", nullable = false)
     private String skinHash;
 
-    @Column(name = "cape_hash", nullable = true)
+    @Column(name = "cape_hash")
     private String capeHash;
 
-    public User(String login, String email, String uuid, String password, String serverID, String groupName, boolean isSlimSkin, String skinHash, String capeHash) {
-        this.login = login;
+    public User(String username, String email, String uuid, String password, String serverID, String groupName, boolean isSlimSkin, String skinHash, String capeHash) {
+        this.username = username;
         this.email = email;
         this.uuid = uuid;
         this.password = password;
@@ -99,12 +99,12 @@ public class User {
         this.email = email;
     }
 
-    public String getLogin() {
-        return login;
+    public String getUsername() {
+        return username;
     }
 
-    public void setLogin(String login) {
-        this.login = login;
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     public boolean isSlimSkin() {

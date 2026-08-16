@@ -1,17 +1,16 @@
 package ru.azorium.launchserver.dto;
 
-import jakarta.persistence.Column;
 import ru.azorium.launchserver.entity.User;
 
 public class UserInfoResponse {
-    private String username;
-    private String uuid;
-    private String groupName;
-    private String capeHash;
-    private String skinHash;
+    private final String username;
+    private final String uuid;
+    private final String groupName;
+    private final String capeHash;
+    private final String skinHash;
 
     public UserInfoResponse(User user) {
-        this.username = user.getLogin();
+        this.username = user.getUsername();
         this.uuid = user.getUuid();
         this.groupName = user.getGroupName();
         this.skinHash = user.getSkinHash();

@@ -46,7 +46,7 @@ public class YggdrasilAuthController {
     @GetMapping("/sessionserver/session/minecraft/hasJoined")
     public ResponseEntity<?> hasJoined(@RequestParam String username, @RequestParam String serverId) {
         User user = userRepository
-                .findByEmailOrLogin(null, username)
+                .findByEmailOrUsername(null, username)
                 .orElse(null);
 
         if (user == null) {
@@ -97,7 +97,7 @@ public class YggdrasilAuthController {
 
         return ResponseEntity.ok(Map.of(
                 "id", profileId,
-                "name", user.getLogin(),
+                "name", user.getUsername(),
                 "properties", List.of(
                         Map.of(
                                 "name", "textures",
@@ -115,7 +115,7 @@ public class YggdrasilAuthController {
 
         String username = jwtUtils.getUserNameFromJwtToken(req.getAccessToken());
         User user = userRepository
-                .findByEmailOrLogin(null, username)
+                .findByEmailOrUsername(null, username)
                 .orElseThrow();
 
         user.setServerID(req.getServerId());
@@ -162,7 +162,7 @@ public class YggdrasilAuthController {
                 """.formatted(
                 System.currentTimeMillis(),
                 profileId,
-                user.getLogin(),
+                user.getUsername(),
                 skinApiUrl + user.getSkinHash() + ".png",
                 skinMetadata,
                 capeJson
@@ -173,7 +173,7 @@ public class YggdrasilAuthController {
         return ResponseEntity.ok(
                 Map.of(
                         "id", profileId,
-                        "name", user.getLogin(),
+                        "name", user.getUsername(),
                         "properties", List.of(
                                 Map.of(
                                         "name", "textures",
