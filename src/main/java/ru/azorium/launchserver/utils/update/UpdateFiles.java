@@ -3,13 +3,11 @@ package ru.azorium.launchserver.utils.update;
 import com.google.gson.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.azorium.launchserver.GlobalObjects;
 import ru.azorium.launchserver.LauncherApplication;
-import ru.azorium.launchserver.dto.ClientProfile;
+import ru.azorium.launchserver.model.dto.ClientProfile;
 import ru.azorium.launchserver.utils.gson.JsonHelper;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;

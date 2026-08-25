@@ -1,6 +1,5 @@
 package ru.azorium.launchserver.controllers;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -10,10 +9,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
-import ru.azorium.launchserver.dto.JwtResponse;
-import ru.azorium.launchserver.dto.LoginRequest;
-import ru.azorium.launchserver.dto.UserInfoResponse;
-import ru.azorium.launchserver.entity.User;
+import ru.azorium.launchserver.model.dto.JwtResponse;
+import ru.azorium.launchserver.model.dto.LoginRequest;
+import ru.azorium.launchserver.model.dto.UserInfoResponse;
+import ru.azorium.launchserver.model.entity.User;
 import ru.azorium.launchserver.repository.UserRepository;
 import ru.azorium.launchserver.utils.JwtUtils;
 
@@ -21,14 +20,15 @@ import ru.azorium.launchserver.utils.JwtUtils;
 @RequestMapping("/api/auth/launcher")
 public class LauncherAuthController {
 
-    @Autowired
-    AuthenticationManager authenticationManager;
+    private final AuthenticationManager authenticationManager;
+    private final JwtUtils jwtUtils;
+    private final UserRepository userRepository;
 
-    @Autowired
-    JwtUtils jwtUtils;
-
-    @Autowired
-    UserRepository userRepository;
+    public LauncherAuthController(AuthenticationManager authenticationManager, JwtUtils jwtUtils, UserRepository userRepository) {
+        this.authenticationManager = authenticationManager;
+        this.jwtUtils = jwtUtils;
+        this.userRepository = userRepository;
+    }
 
     @PostMapping("/login")
     public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest) {

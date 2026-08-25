@@ -31,11 +31,7 @@ import static ru.azorium.launchserver.LauncherApplication.rootPath;
 @RestController
 @RequestMapping("/update")
 public class FileUpdaterController {
-    static final Path fileStorageLocation = rootPath.toAbsolutePath().normalize();
     static List<String> allowedDirs = new ArrayList<>();
-
-    private static final Logger logger = LoggerFactory.getLogger(FileUpdaterController.class);
-
     static {
         allowedDirs.add("updates");
     }

@@ -1,11 +1,10 @@
 package ru.azorium.launchserver.controllers;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import ru.azorium.launchserver.dto.JoinRequest;
-import ru.azorium.launchserver.entity.User;
+import ru.azorium.launchserver.model.dto.JoinRequest;
+import ru.azorium.launchserver.model.entity.User;
 import ru.azorium.launchserver.repository.UserRepository;
 import ru.azorium.launchserver.utils.JwtUtils;
 import ru.azorium.launchserver.utils.Yggdrasil;
@@ -18,17 +17,21 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/auth/yggdrasil")
 public class YggdrasilAuthController {
-    @Autowired
-    UserRepository userRepository;
 
-    @Autowired
-    JwtUtils jwtUtils;
+    private final UserRepository userRepository;
+    private final JwtUtils jwtUtils;
+    private final String skinApiUrl;
+    private final String capeApiUrl;
 
-    @Value("${app.skin_api_url}")
-    private String skinApiUrl;
-
-    @Value("${app.cape_api_url}")
-    private String capeApiUrl;
+    public YggdrasilAuthController(
+            UserRepository userRepository, JwtUtils jwtUtils,
+            @Value("${app.skin_api_url}") String skinApiUrl, @Value("${app.cape_api_url}") String capeApiUrl
+    ) {
+        this.userRepository = userRepository;
+        this.jwtUtils = jwtUtils;
+        this.skinApiUrl = skinApiUrl;
+        this.capeApiUrl = capeApiUrl;
+    }
 
     @GetMapping
     public Map<String, Object> metadata() {
