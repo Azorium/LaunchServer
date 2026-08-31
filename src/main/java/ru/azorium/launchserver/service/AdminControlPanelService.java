@@ -1,8 +1,10 @@
 package ru.azorium.launchserver.service;
 
+import org.apache.catalina.core.ApplicationContext;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
 import ru.azorium.launchserver.LauncherApplication;
+import ru.azorium.launchserver.config.AppPaths;
 import ru.azorium.launchserver.exception.ClientFolderAlreadyExistException;
 import ru.azorium.launchserver.utils.admin.EventLogger;
 import ru.azorium.launchserver.utils.admin.installclient.InstallClientExec;
@@ -20,14 +22,18 @@ import java.util.concurrent.Executors;
 @Service
 public class AdminControlPanelService {
     private final SseLoggerService sseLoggerService;
+    private final AppPaths appPaths;
+    private final Sync sync;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
-    public AdminControlPanelService(SseLoggerService sseLoggerService) {
+    public AdminControlPanelService(SseLoggerService sseLoggerService, AppPaths appPaths, Sync sync) {
         this.sseLoggerService = sseLoggerService;
+        this.appPaths = appPaths;
+        this.sync = sync;
     }
 
     public void installClient(AdminRequests.InstallClientRequest installClientRequest) {
-        Path clientPath = LauncherApplication.clientsPath.resolve(installClientRequest.getFolderName());
+        Path clientPath = appPaths.getClientsPath().resolve(installClientRequest.getFolderName());
         EventLogger eventLogger = sseLoggerService.create(installClientRequest.getEmitterKey());
 
         if (Files.exists(clientPath)) {
@@ -50,14 +56,14 @@ public class AdminControlPanelService {
 
         executor.submit(() -> {
             try {
-                new InstallClientExec(context).start();
+                new InstallClientExec().start(context, appPaths);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         });
     }
 
-    public void sync(@RequestBody AdminRequests.SyncRequest syncRequest){
+    public void sync(@RequestBody AdminRequests.SyncRequest syncRequest) {
         EventLogger eventLogger = sseLoggerService.create(syncRequest.getEmitterKey());
 
         SyncContext context = new SyncContext(
@@ -66,9 +72,7 @@ public class AdminControlPanelService {
                 eventLogger
         );
 
-        executor.submit(() -> {
-            Sync.start(context);
-        });
+        executor.submit(() -> sync.start(context));
     }
 
 }

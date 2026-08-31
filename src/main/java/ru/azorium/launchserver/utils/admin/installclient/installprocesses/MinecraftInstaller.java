@@ -1,8 +1,8 @@
 package ru.azorium.launchserver.utils.admin.installclient.installprocesses;
 
 import com.google.gson.*;
-import ru.azorium.launchserver.GlobalObjects;
-import ru.azorium.launchserver.LauncherApplication;
+import ru.azorium.launchserver.AppConstants;
+import ru.azorium.launchserver.config.AppPaths;
 import ru.azorium.launchserver.utils.admin.EventLogger;
 import ru.azorium.launchserver.utils.admin.installclient.InstallContext;
 import ru.azorium.launchserver.utils.FileUtils;
@@ -25,15 +25,17 @@ public class MinecraftInstaller {
     private final Path versionsPath;
     private boolean isInstalledAssets;
     private final InstallContext context;
+    private final AppPaths appPaths;
 
     private record AssetToDownload(String hash, String subHash, Path path) {
     }
 
-    public MinecraftInstaller(InstallContext context) {
+    public MinecraftInstaller(InstallContext context, AppPaths appPaths) {
         this.librariesPath = context.librariesPath();
         this.versionsPath = context.versionsPath();
         this.mcVersion = context.mcVersion();
         this.context = context;
+        this.appPaths = appPaths;
     }
 
     public boolean start() throws IOException {
@@ -62,8 +64,8 @@ public class MinecraftInstaller {
     }
 
     private void downloadAssets(JsonObject versionJson) throws IOException {
-        Path indexesPath = LauncherApplication.assetsPath.resolve("indexes");
-        Path objectsPath = LauncherApplication.assetsPath.resolve("objects");
+        Path indexesPath = appPaths.getAssetsPath().resolve("indexes");
+        Path objectsPath = appPaths.getAssetsPath().resolve("objects");
         Path versionManifestPath = indexesPath.resolve(mcVersion + ".json");
 
         if (Files.exists(versionManifestPath)) {
@@ -77,7 +79,7 @@ public class MinecraftInstaller {
         String assetsUrl = JsonHelper.getString(versionJson, "assetIndex", "url");
         JsonObject assetsObject = JsonHelper.getObjectFromURL(assetsUrl);
 
-        String versionText = GlobalObjects.gson.toJson(assetsObject);
+        String versionText = AppConstants.gson.toJson(assetsObject);
         Files.writeString(versionManifestPath, versionText);
 
         List<AssetToDownload> toDownload = JsonHelper.getObject(assetsObject, "objects").entrySet().stream()

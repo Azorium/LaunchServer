@@ -2,6 +2,7 @@ package ru.azorium.launchserver.utils.admin.installclient.installprocesses;
 
 import com.google.gson.JsonObject;
 import ru.azorium.launchserver.LauncherApplication;
+import ru.azorium.launchserver.config.AppPaths;
 import ru.azorium.launchserver.utils.admin.installclient.InstallContext;
 import ru.azorium.launchserver.model.dto.ClientProfile;
 import ru.azorium.launchserver.utils.gson.JsonHelper;
@@ -14,7 +15,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
-import static ru.azorium.launchserver.GlobalObjects.gson;
+import static ru.azorium.launchserver.AppConstants.gson;
 
 public class CreateProfileJson {
     Path profilePath;
@@ -28,18 +29,20 @@ public class CreateProfileJson {
     private final String loaderVersion;
     private final Path clientPath;
     private final Path versionsPath;
+    private AppPaths appPaths;
 
-    public CreateProfileJson(InstallContext context) {
+    public CreateProfileJson(InstallContext context, AppPaths appPaths) {
         this.clientName = context.clientName();
         this.mcVersion = context.mcVersion();
         this.loaderType = context.loaderType();
         this.loaderVersion = context.loaderVersion();
         this.clientPath = context.clientPath();
         this.versionsPath = context.versionsPath();
+        this.appPaths = appPaths;
     }
 
     public void start() throws IOException {
-        profilePath = LauncherApplication.profilesPath.resolve(clientName + ".json");
+        profilePath = appPaths.getProfilesPath().resolve(clientName + ".json");
         minorNum = MinecraftVersions.getMinorNum(MinecraftVersions.getParts(mcVersion));
         getManifests();
         mergeManifests();

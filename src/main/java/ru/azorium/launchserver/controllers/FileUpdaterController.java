@@ -2,9 +2,6 @@ package ru.azorium.launchserver.controllers;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import jakarta.servlet.http.HttpServletRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
@@ -12,27 +9,31 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import ru.azorium.launchserver.GlobalObjects;
+import ru.azorium.launchserver.AppConstants;
 import ru.azorium.launchserver.LauncherApplication;
+import ru.azorium.launchserver.config.AppHashes;
+import ru.azorium.launchserver.config.AppPaths;
 import ru.azorium.launchserver.utils.hash.Md5;
 import ru.azorium.launchserver.utils.update.UpdateFiles;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Pattern;
-
-import static ru.azorium.launchserver.LauncherApplication.rootPath;
 
 @RestController
 @RequestMapping("/update")
 public class FileUpdaterController {
-    static List<String> allowedDirs = new ArrayList<>();
-    static {
+    private final AppPaths appPaths;
+    private final AppHashes appHashes;
+    private final List<String> allowedDirs = new ArrayList<>();
+    private final UpdateFiles updateFiles;
+
+    public FileUpdaterController(AppPaths appPaths, AppHashes appHashes, UpdateFiles updateFiles) {
+        this.appPaths = appPaths;
+        this.appHashes = appHashes;
+        this.updateFiles = updateFiles;
         allowedDirs.add("updates");
     }
 
@@ -43,7 +44,7 @@ public class FileUpdaterController {
             String date = objFromRequest.get("date").getAsString();
             String updateTarget = objFromRequest.get("updateTarget").getAsString();
 
-            byte[] zipBytes = updateTarget.equals("client") ? UpdateFiles.updateClient(objFromRequest, date) : UpdateFiles.updateAssets(objFromRequest, date);
+            byte[] zipBytes = updateTarget.equals("client") ? updateFiles.updateClient(objFromRequest, date) : updateFiles.updateAssets(objFromRequest, date);
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
@@ -58,7 +59,7 @@ public class FileUpdaterController {
 
     @PostMapping("/launcher")
     public ResponseEntity<byte[]> updateLauncher(@RequestBody String json) {
-        byte[] zipBytes = UpdateFiles.updateLauncher(json);
+        byte[] zipBytes = updateFiles.updateLauncher(json);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
@@ -74,8 +75,8 @@ public class FileUpdaterController {
         String runtimeZipHash = reqObj.get("runtimeZipHash").getAsString();
         String launcherFileHash = reqObj.get("launcherFileHash").getAsString();
 
-        boolean runtimeZipIsNeeded = !LauncherApplication.runtimeZipHash.equals(runtimeZipHash);
-        boolean launcherFileIsNeeded = !LauncherApplication.launcherHashes.containsValue(launcherFileHash);
+        boolean runtimeZipIsNeeded = !appHashes.getRuntimeZipHash().equals(runtimeZipHash);
+        boolean launcherFileIsNeeded = !appHashes.getLauncherHashes().containsValue(launcherFileHash);
 
         if (checkType.equals("files")) {
             JsonObject filesCheckObj = new JsonObject();
@@ -85,7 +86,7 @@ public class FileUpdaterController {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
 
-            return new ResponseEntity<>(GlobalObjects.gson.toJson(filesCheckObj), headers, HttpStatus.OK);
+            return new ResponseEntity<>(AppConstants.gson.toJson(filesCheckObj), headers, HttpStatus.OK);
         }
 
         return ResponseEntity.ok(runtimeZipIsNeeded || launcherFileIsNeeded);
@@ -98,7 +99,7 @@ public class FileUpdaterController {
             String fileExtension = jsonObject.get("fileExtension").getAsString();
             String reqFileHash = jsonObject.get("hash").getAsString();
 
-            Path guardPath = LauncherApplication.launcherComponentsPath.resolve("LauncherGuard" + fileExtension);
+            Path guardPath = appPaths.getLauncherComponentsPath().resolve("LauncherGuard" + fileExtension);
             String serverFileHash = Md5.getFileMd5(guardPath);
 
             if (serverFileHash.equals(reqFileHash)) {
@@ -128,7 +129,7 @@ public class FileUpdaterController {
             JsonObject jsonObject = JsonParser.parseString(json).getAsJsonObject();
             String reqFileHash = jsonObject.get("hash").getAsString();
 
-            Path guardPath = LauncherApplication.launcherComponentsPath.resolve("authlib-injector.jar");
+            Path guardPath = appPaths.getLauncherComponentsPath().resolve("authlib-injector.jar");
             String serverFileHash = Md5.getFileMd5(guardPath);
 
             if (serverFileHash.equals(reqFileHash)) {

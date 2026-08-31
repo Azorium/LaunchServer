@@ -3,14 +3,14 @@ package ru.azorium.launchserver.utils.gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import ru.azorium.launchserver.GlobalObjects;
+import ru.azorium.launchserver.AppConstants;
 
 import java.io.*;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static ru.azorium.launchserver.GlobalObjects.gson;
+import static ru.azorium.launchserver.AppConstants.gson;
 
 public class JsonHelper {
 
@@ -98,7 +98,7 @@ public class JsonHelper {
             return new JsonObject();
         } else {
             try (InputStream is = jsonPath.toUri().toURL().openStream()) {
-                return GlobalObjects.gson.fromJson(new InputStreamReader(is), JsonObject.class);
+                return AppConstants.gson.fromJson(new InputStreamReader(is), JsonObject.class);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

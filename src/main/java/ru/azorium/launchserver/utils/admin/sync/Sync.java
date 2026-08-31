@@ -1,31 +1,77 @@
 package ru.azorium.launchserver.utils.admin.sync;
 
-import ru.azorium.launchserver.utils.admin.sync.actions.AssetsSync;
-import ru.azorium.launchserver.utils.admin.sync.actions.ClientsSync;
-import ru.azorium.launchserver.utils.admin.sync.actions.LauncherSync;
-import ru.azorium.launchserver.utils.admin.sync.actions.ProfilesSync;
+import org.springframework.stereotype.Component;
+import ru.azorium.launchserver.config.AppHashes;
+import ru.azorium.launchserver.config.AppPaths;
+import ru.azorium.launchserver.utils.ZipUtils;
+import ru.azorium.launchserver.utils.hash.HashManifest;
+import ru.azorium.launchserver.utils.hash.Md5;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
+
+@Component
 public class Sync {
+    private final HashManifest hashManifest;
+    private final AppPaths appPaths;
+    private final AppHashes appHashes;
 
-    public static void start(SyncContext context) {
+    public Sync(HashManifest hashManifest, AppPaths appPaths, AppHashes appHashes) {
+        this.hashManifest = hashManifest;
+        this.appPaths = appPaths;
+        this.appHashes = appHashes;
+    }
+
+    public void start(SyncContext context) {
         String value = context.value();
 
         switch (context.action()) {
-            case "profiles" -> ProfilesSync.start();
-            case "client" -> ClientsSync.start(value);
-            case "asset" -> AssetsSync.start(value);
-            case "launcher" -> LauncherSync.start();
+            case "profiles" -> profiles();
+            case "client" -> client(value);
+            case "asset" -> asset(value);
+            case "launcher" -> launcher();
             case "all" -> {
-                ProfilesSync.start();
-                ClientsSync.start(value);
-                AssetsSync.start(value);
-                LauncherSync.start();
+                profiles();
+                client(value);
+                asset(value);
+                launcher();
             }
         }
 
         if (context.eventLogger() != null) {
             context.eventLogger().complete();
         }
+    }
+
+    private void profiles() {
+        Path profilesPath = appPaths.getProfilesPath();
+        List<Path> filesList = new ArrayList<>();
+
+        try (Stream<Path> stream = Files.walk(profilesPath)) {
+            stream
+                    .filter(file -> file.toString().endsWith(".json"))
+                    .forEach(filesList::add);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        ZipUtils.createZipFromFilesWithoutEnclosure(profilesPath, "profiles.zip", filesList);
+    }
+
+    private void client(String clientName) {
+        hashManifest.createClientManifest(clientName);
+    }
+
+    private void asset(String mcVersion) {
+        hashManifest.createAssetsManifest(mcVersion);
+    }
+
+    private void launcher() {
+        appHashes.setRuntimeZipHash(Md5.getFileMd5(appPaths.getRuntimeZipPath()));
+        hashManifest.createLauncherManifest();
     }
 
 }

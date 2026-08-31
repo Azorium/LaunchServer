@@ -1,32 +1,38 @@
 package ru.azorium.launchserver.utils.hash;
 
 import com.google.gson.JsonObject;
-import ru.azorium.launchserver.GlobalObjects;
-import ru.azorium.launchserver.LauncherApplication;
+import org.springframework.stereotype.Component;
+import ru.azorium.launchserver.config.AppHashes;
+import ru.azorium.launchserver.config.AppPaths;
 import ru.azorium.launchserver.utils.gson.JsonHelper;
 import ru.azorium.launchserver.utils.ZipUtils;
 
 import java.io.File;
-import java.io.FileWriter;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
-public class Hashes {
-    private static final Path clientsHashesFilePath = LauncherApplication.hashesPath.resolve("clients.json");
-    private static final Path assetsHashesFilePath = LauncherApplication.hashesPath.resolve("assets.json");
-    public static final Path launcherHashesFilePath = LauncherApplication.hashesPath.resolve("launcher.json");
+@Component
+public class HashManifest {
+    private final Path clientsHashManifestPath;
+    private final Path assetsHashManifestPath;
+    private final AppPaths appPaths;
+    private final AppHashes appHashes;
 
-    public static void createClientsManifest(String folderName) {
-        JsonObject clientsObj = JsonHelper.getObjectFromPath(clientsHashesFilePath);
+    public HashManifest(AppPaths appPaths, AppHashes appHashes) {
+        this.appPaths = appPaths;
+        this.clientsHashManifestPath = appPaths.getHashesPath().resolve("clients.json");
+        this.assetsHashManifestPath = appPaths.getHashesPath().resolve("assets.json");
+        this.appHashes = appHashes;
+    }
+
+    public void createClientManifest(String folderName) {
+        JsonObject clientsObj = JsonHelper.getObjectFromPath(clientsHashManifestPath);
         List<Path> filesList = new ArrayList<>();
 
-        try (Stream<Path> stream = Files.walk(LauncherApplication.clientsPath, 1)) {
+        try (Stream<Path> stream = Files.walk(appPaths.getClientsPath(), 1)) {
             stream
                     .filter(path -> clientsFilter(path, folderName))
                     .forEach(path -> {
@@ -45,18 +51,18 @@ public class Hashes {
                             throw new RuntimeException(e);
                         }
 
-                        ZipUtils.createZipFromFilesWithEnclosure(LauncherApplication.clientsCachesPath, path, fileName + ".zip", filesList);
+                        ZipUtils.createZipFromFilesWithEnclosure(appPaths.getClientsCachesPath(), path, fileName + ".zip", filesList);
                     });
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
-        JsonHelper.saveFromObjToFile(clientsHashesFilePath, clientsObj);
+        JsonHelper.saveFromObjToFile(clientsHashManifestPath, clientsObj);
     }
 
-    public static void createAssetsManifest(String version) {
-        JsonObject assetsObj = JsonHelper.getObjectFromPath(assetsHashesFilePath);
-        Path indexesPath = LauncherApplication.assetsPath.resolve("indexes");
+    public void createAssetsManifest(String version) {
+        JsonObject assetsObj = JsonHelper.getObjectFromPath(assetsHashManifestPath);
+        Path indexesPath = appPaths.getAssetsPath().resolve("indexes");
 
         try (Stream<Path> stream = Files.walk(indexesPath)) {
             stream
@@ -75,7 +81,7 @@ public class Hashes {
                             String hash = value.getAsJsonObject().get("hash").getAsString();
                             String substring = hash.substring(0, 2);
 
-                            Path assetPath = LauncherApplication.assetsPath.resolve("objects").resolve(substring + File.separator + hash);
+                            Path assetPath = appPaths.getAssetsPath().resolve("objects").resolve(substring + File.separator + hash);
 
                             if (!Files.exists(assetPath)) return;
 
@@ -88,38 +94,38 @@ public class Hashes {
                         });
 
                         String fileName = path.toString().replace(path.getParent().toString() + File.separator, "").replace(".json", "") + ".zip";
-                        ZipUtils.createZipFromFilesWithEnclosure(LauncherApplication.assetsCachesPath, LauncherApplication.assetsPath, fileName, assetFilesList);
+                        ZipUtils.createZipFromFilesWithEnclosure(appPaths.getAssetsCachesPath(), appPaths.getAssetsPath(), fileName, assetFilesList);
                     });
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
-        JsonHelper.saveFromObjToFile(assetsHashesFilePath, assetsObj);
+        JsonHelper.saveFromObjToFile(assetsHashManifestPath, assetsObj);
     }
 
-    public static void createLauncherManifest() {
-        JsonObject manifestObj = JsonHelper.getObjectFromPath(launcherHashesFilePath);
+    public void createLauncherManifest() {
+        JsonObject manifestObj = JsonHelper.getObjectFromPath(appPaths.getLauncherHashManifestPath());
 
-        try (Stream<Path> stream = Files.walk(LauncherApplication.launcherPath, 1)) {
+        try (Stream<Path> stream = Files.walk(appPaths.getLauncherPath(), 1)) {
             stream
                     .skip(1)
                     .filter(path -> !path.toFile().isDirectory())
                     .forEach(path -> {
                         String fileNameWithoutExtension = path.toString().replace(path.getParent() + File.separator, "").split("\\.")[0];
-                        ZipUtils.createZipFromFilesWithoutEnclosure(LauncherApplication.launcherCachesPath, fileNameWithoutExtension + ".zip", new ArrayList<>(List.of(path)));
+                        ZipUtils.createZipFromFilesWithoutEnclosure(appPaths.getLauncherCachesPath(), fileNameWithoutExtension + ".zip", new ArrayList<>(List.of(path)));
                         String fileHash = Md5.getFileMd5(path);
 
                         manifestObj.addProperty(fileNameWithoutExtension, fileHash);
-                        LauncherApplication.launcherHashes.put(fileNameWithoutExtension, fileHash);
+                        appHashes.getLauncherHashes().put(fileNameWithoutExtension, fileHash);
                     });
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
-        JsonHelper.saveFromObjToFile(launcherHashesFilePath, manifestObj);
+        JsonHelper.saveFromObjToFile(appPaths.getLauncherHashManifestPath(), manifestObj);
     }
 
-    static boolean clientsFilter(Path path, String value) {
+    private boolean clientsFilter(Path path, String value) {
         if (value.equals("all")) {
             return !path.getFileName().toString().equals("assets") && !path.getFileName().toString().equals("clients");
         } else {
@@ -127,7 +133,7 @@ public class Hashes {
         }
     }
 
-    static boolean assetsFilter(Path path, String version) {
+    private boolean assetsFilter(Path path, String version) {
         if (version.equals("all")) {
             return true;
         } else {

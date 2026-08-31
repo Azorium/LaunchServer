@@ -79,9 +79,9 @@ public class ZipUtils {
         }
     }
 
-    public static byte[] removeModsFromClientArchive(JsonObject requestObj) {
+    public static byte[] removeModsFromClientArchive(JsonObject requestObj, Path clientsCachesPath) {
         try {
-            Path archivePath = LauncherApplication.clientsCachesPath.resolve(requestObj.get("clientfolderName").getAsString() + ".zip");
+            Path archivePath = clientsCachesPath.resolve(requestObj.get("clientfolderName").getAsString() + ".zip");
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             List<String> disabledOptionalMods = new ArrayList<>();
 

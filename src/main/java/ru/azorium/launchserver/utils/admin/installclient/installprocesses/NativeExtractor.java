@@ -2,7 +2,7 @@ package ru.azorium.launchserver.utils.admin.installclient.installprocesses;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.azorium.launchserver.GlobalObjects;
+import ru.azorium.launchserver.AppConstants;
 import ru.azorium.launchserver.utils.admin.EventLogger;
 import ru.azorium.launchserver.utils.admin.installclient.InstallContext;
 
@@ -27,7 +27,7 @@ public class NativeExtractor {
 
         Manifest manifest;
         try (Reader reader = Files.newBufferedReader(manifestPath)) {
-            manifest = GlobalObjects.gson.fromJson(reader, Manifest.class);
+            manifest = AppConstants.gson.fromJson(reader, Manifest.class);
         }
 
         List<ExtractionTask> tasks = new ArrayList<>();
