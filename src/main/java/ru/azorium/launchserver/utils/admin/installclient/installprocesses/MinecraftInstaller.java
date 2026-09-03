@@ -64,6 +64,7 @@ public class MinecraftInstaller {
     }
 
     private void downloadAssets(JsonObject versionJson) throws IOException {
+        context.logger().info(new EventLogger.InstallEventMessage(null, "Установка ассетов", "Установка ассетов"));
         Path indexesPath = appPaths.getAssetsPath().resolve("indexes");
         Path objectsPath = appPaths.getAssetsPath().resolve("objects");
         Path versionManifestPath = indexesPath.resolve(mcVersion + ".json");
@@ -93,8 +94,6 @@ public class MinecraftInstaller {
                 })
                 .filter(asset -> !Files.exists(asset.path))
                 .toList();
-
-        context.logger().info(new EventLogger.InstallEventMessage(null, "Установка ассетов", "Установка ассетов"));
 
         toDownload.parallelStream().forEach(asset -> {
             FileUtils.createDirectories(asset.path.getParent());

@@ -3,6 +3,7 @@ package ru.azorium.launchserver.utils.admin.installclient.installprocesses;
 import com.google.gson.JsonObject;
 import ru.azorium.launchserver.LauncherApplication;
 import ru.azorium.launchserver.config.AppPaths;
+import ru.azorium.launchserver.utils.admin.EventLogger;
 import ru.azorium.launchserver.utils.admin.installclient.InstallContext;
 import ru.azorium.launchserver.model.dto.ClientProfile;
 import ru.azorium.launchserver.utils.gson.JsonHelper;
@@ -29,7 +30,9 @@ public class CreateProfileJson {
     private final String loaderVersion;
     private final Path clientPath;
     private final Path versionsPath;
-    private AppPaths appPaths;
+    private final AppPaths appPaths;
+    private final EventLogger logger;
+    private final boolean isVanilla;
 
     public CreateProfileJson(InstallContext context, AppPaths appPaths) {
         this.clientName = context.clientName();
@@ -39,9 +42,12 @@ public class CreateProfileJson {
         this.clientPath = context.clientPath();
         this.versionsPath = context.versionsPath();
         this.appPaths = appPaths;
+        this.isVanilla = context.loaderType().equals("vanilla");
+        this.logger = context.logger();
     }
 
     public void start() throws IOException {
+        logger.info(new EventLogger.InstallEventMessage(null, "Создание профиля", "Создание профиля"));
         profilePath = appPaths.getProfilesPath().resolve(clientName + ".json");
         minorNum = MinecraftVersions.getMinorNum(MinecraftVersions.getParts(mcVersion));
         getManifests();
@@ -59,7 +65,7 @@ public class CreateProfileJson {
                 .forEach(path -> {
                     if (path.toFile().getName().equals(mcVersion + ".json")) {
                         paths.put("mcManifest", path);
-                    } else {
+                    } else if (!isVanilla) {
                         paths.put("forgeManifest", path);
                     }
                 });
@@ -101,13 +107,12 @@ public class CreateProfileJson {
         clientProfileObj.backend.folderName = clientName;
         clientProfileObj.backend.javaVersion = JsonHelper.getString(mcManifestObj, "javaVersion", "majorVersion");
         clientProfileObj.backend.mainClass = getMainClass();
-
         setClasspaths();
         setGameArguments();
     }
 
     private String getMainClass() {
-        return minorNum < 12 ? JsonHelper.getString(loaderManifestObj, "versionInfo", "mainClass") : JsonHelper.getString(loaderManifestObj, "mainClass");
+        return isVanilla ? JsonHelper.getString(mcManifestObj, "mainClass") : minorNum < 12 ? JsonHelper.getString(loaderManifestObj, "versionInfo", "mainClass") : JsonHelper.getString(loaderManifestObj, "mainClass");
     }
 
     private void setClasspaths() {
@@ -137,27 +142,39 @@ public class CreateProfileJson {
         int minor = minorNum;
 
         if (minor < 12) {
+            if (isVanilla) {
+                clientProfileObj.backend.arguments.game = Collections.singletonList(JsonHelper.getString(mcManifestObj,  "minecraftArguments"));
+                return;
+            }
+
             clientProfileObj.backend.arguments.game = Collections.singletonList(JsonHelper.getString(loaderManifestObj, "versionInfo", "minecraftArguments"));
         } else if (minor < 16) {
+            if (isVanilla) {
+                clientProfileObj.backend.arguments.game = Collections.singletonList(JsonHelper.getString(mcManifestObj, "minecraftArguments"));
+                return;
+            }
+
             clientProfileObj.backend.arguments.game = Collections.singletonList(JsonHelper.getString(loaderManifestObj, "minecraftArguments"));
         } else {
             clientProfileObj.backend.arguments.game = new ArrayList<>();
             clientProfileObj.backend.arguments.jvm = new ArrayList<>();
 
-            JsonHelper.getArray(mcManifestObj, "arguments", "game").asList().stream()
+            Objects.requireNonNull(JsonHelper.getArray(mcManifestObj, "arguments", "game")).asList().stream()
                     .filter(el -> {
                         return !el.isJsonObject();
                     })
                     .forEach(el -> clientProfileObj.backend.arguments.game.add(el.getAsString()));
-            JsonHelper.getArray(loaderManifestObj, "arguments", "game").asList().forEach(el -> clientProfileObj.backend.arguments.game.add(el.getAsString()));
 
-
-            JsonHelper.getArray(mcManifestObj, "arguments", "jvm").asList().stream()
+            Objects.requireNonNull(JsonHelper.getArray(mcManifestObj, "arguments", "jvm")).asList().stream()
                     .filter(el -> {
                         return !el.toString().equals("\"-cp\"") && !el.toString().equals("\"${classpath}\"") && !el.isJsonObject() && !el.toString().contains("library.path");
                     })
                     .forEach(el -> clientProfileObj.backend.arguments.jvm.add(el.getAsString()));
-            JsonHelper.getArray(loaderManifestObj, "arguments", "jvm").asList().forEach(el -> clientProfileObj.backend.arguments.jvm.add(el.getAsString()));
+
+            if (!isVanilla) {
+                Objects.requireNonNull(JsonHelper.getArray(loaderManifestObj, "arguments", "game")).asList().forEach(el -> clientProfileObj.backend.arguments.game.add(el.getAsString()));
+                Objects.requireNonNull(JsonHelper.getArray(loaderManifestObj, "arguments", "jvm")).asList().forEach(el -> clientProfileObj.backend.arguments.jvm.add(el.getAsString()));
+            }
 
         }
     }

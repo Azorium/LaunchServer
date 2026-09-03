@@ -120,7 +120,7 @@ public class ClasspathBuilder {
         minecraftManifest.libraries.forEach(lib -> {
             if (lib.downloads.artifact != null) {
                 if (lib.rules == null) {
-                    if (loader != null && forgeConflictLibs.contains(lib.downloads.artifact.path)) {
+                    if (!loader.equals("vanilla") && forgeConflictLibs.contains(lib.downloads.artifact.path)) {
                         return;
                     }
                     libs.add("${client_path}" + clientPath.resolve("libraries").resolve(lib.downloads.artifact.path).toString().replace(clientPath.toString(), "").replace(File.separator, "/"));
