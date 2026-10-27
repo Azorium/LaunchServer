@@ -63,7 +63,7 @@ public class AdminControlPanelService {
         });
     }
 
-    public void sync(@RequestBody AdminRequests.SyncRequest syncRequest) {
+    public void sync(AdminRequests.SyncRequest syncRequest) {
         EventLogger eventLogger = sseLoggerService.create(syncRequest.getEmitterKey());
 
         SyncContext context = new SyncContext(
