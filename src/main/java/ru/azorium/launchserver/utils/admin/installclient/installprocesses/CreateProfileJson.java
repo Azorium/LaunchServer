@@ -180,13 +180,7 @@ public class CreateProfileJson {
     }
 
     void createProfileFile() {
-        List<String> game = clientProfileObj.backend.arguments.game;
         JsonObject jsonObject = gson.toJsonTree(clientProfileObj).getAsJsonObject();
-
-        if (game.size() == 1) {
-            jsonObject.getAsJsonObject("backend").getAsJsonObject("arguments").addProperty("game", game.get(0));
-        }
-
         JsonHelper.saveFromObjToFile(profilePath, jsonObject);
     }
 
