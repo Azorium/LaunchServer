@@ -139,16 +139,14 @@ public class CreateProfileJson {
     }
 
     void setGameArguments() {
-        int minor = minorNum;
-
-        if (minor < 12) {
+        if (minorNum < 12) {
             if (isVanilla) {
-                clientProfileObj.backend.arguments.game = Collections.singletonList(JsonHelper.getString(mcManifestObj,  "minecraftArguments"));
+                clientProfileObj.backend.arguments.game = Arrays.stream(JsonHelper.getString(mcManifestObj,  "minecraftArguments").split(" ")).toList();
                 return;
             }
 
-            clientProfileObj.backend.arguments.game = Collections.singletonList(JsonHelper.getString(loaderManifestObj, "versionInfo", "minecraftArguments"));
-        } else if (minor < 16) {
+            clientProfileObj.backend.arguments.game = Arrays.stream(JsonHelper.getString(loaderManifestObj, "versionInfo", "minecraftArguments").split(" ")).toList();
+        } else if (minorNum < 16) {
             if (isVanilla) {
                 clientProfileObj.backend.arguments.game = Collections.singletonList(JsonHelper.getString(mcManifestObj, "minecraftArguments"));
                 return;
